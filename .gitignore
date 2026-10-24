@@ -1,0 +1,7 @@
+# Gizli / kisisel - GitHub'a ASLA gitmez
+service_account.json
+data/
+logs/
+node_modules/
+*.lock
+*.bak

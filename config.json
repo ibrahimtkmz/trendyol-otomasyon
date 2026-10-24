@@ -1,0 +1,32 @@
+{
+  "adb": "C:\\Program Files\\BlueStacks_nxt\\HD-Adb.exe",
+  "bildirimToast": true,
+  "zamanlar": {
+    "aff": ["10:30","12:30","14:30","16:30","18:30","20:30","22:30"],
+    "affTekrar": ["10:40","12:40","14:40","16:40","18:40","20:40","22:40"],
+    "trendyol": ["11:00","15:00","21:00"]
+  },
+  "aff": {
+    "sheetId": "164FjHK9gUMiX-mQzfvbwffqxPPV7gX8nvuDEpvu37rY",
+    "kilitBeklemeDk": 25,
+    "aramaZamanAsimiDk": 30,
+    "eskiYayindaYaz": false,
+    "kisiler": {
+      "VEDAT":  {"serial": "127.0.0.1:5555"},
+      "ILHAN":  {"serial": "emulator-5564"},
+      "ANIL":   {"serial": "127.0.0.1:5585", "back": true, "kilit": true},
+      "SUHEDA": {"serial": "127.0.0.1:5595"},
+      "HACER":  {"atla": true}
+    }
+  },
+  "trendyol": {
+    "serial": "127.0.0.1:5585",
+    "sheetId": "13GR6LeIopJqnLCpXcKqywZMsdt4IB8nDwG05VKAnhWY",
+    "kilitBeklemeDk": 40,
+    "taramaMaxDk": 90,
+    "siralamaY": null,
+    "sepetMax": 40,
+    "sepetAdet": 3,
+    "sepetHeadless": true
+  }
+}

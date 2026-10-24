@@ -1,0 +1,53 @@
+<!doctype html><html lang="tr"><head><meta charset="utf-8"><title>Otomasyon Paneli</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;background:#0f1419;color:#e6e6e6;margin:0;padding:16px}
+h1{font-size:20px;margin:0 0 12px}h2{font-size:15px;margin:0 0 8px;color:#9ecbff}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.card{background:#1a2129;border-radius:10px;padding:12px 14px;overflow:auto}
+.wide{grid-column:1/3}table{border-collapse:collapse;width:100%;font-size:13px}th,td{padding:4px 6px;border-bottom:1px solid #2a333d;text-align:left;white-space:nowrap}
+th{color:#8aa}tr.g td{background:#12351f}.ok{color:#5fd17a}.err{color:#ff7b72}.warn{color:#e3b341}.mut{color:#889}
+.now{font-size:16px;padding:10px;border-radius:8px;background:#22303c}.run{background:#1d3b2a}
+button{background:#2f81f7;color:#fff;border:0;border-radius:6px;padding:6px 12px;margin-right:6px;cursor:pointer}button:disabled{background:#444}
+pre{font-size:12px;max-height:340px;overflow:auto;background:#0b0f13;padding:8px;border-radius:6px;white-space:pre-wrap}
+.tabs button{background:#2a333d}.tabs button.on{background:#2f81f7}.stat{display:inline-block;margin-right:18px}.stat b{font-size:18px}
+a{color:#79c0ff}
+</style></head><body>
+<h1>Otomasyon Paneli <span class="mut" id="saat"></span></h1>
+<div class="grid">
+<div class="card wide"><h2>Şu an</h2><div id="simdi" class="now">Yükleniyor…</div></div>
+<div class="card"><h2>Zamanlanmış görevler</h2><table id="gorev"></table>
+<div style="margin-top:10px"><button onclick="baslat('trendyol')" id="bT">Trendyol'u şimdi başlat</button><button onclick="baslat('aff')" id="bA">AFF'yi şimdi başlat</button></div></div>
+<div class="card"><h2>Sepet işlemleri (bugün)</h2><div id="sepet"></div></div>
+<div class="card wide"><h2>Bonuslu teklifler <span class="mut" id="tTab"></span> <button onclick="yukle(1)" style="float:right">Tabloyu yenile</button></h2><div id="ozet"></div><table id="tTbl"></table></div>
+<div class="card"><h2>AFF ziyaret / hakediş <span class="mut" id="aTab"></span></h2><table id="aTbl"></table></div>
+<div class="card"><h2>Bildirimler</h2><div id="bild"></div></div>
+<div class="card wide"><h2>Canlı log</h2><div class="tabs"><button data-l="trendyol" class="on">Trendyol</button><button data-l="aff">AFF</button><button data-l="genel">Genel</button></div><pre id="log"></pre></div>
+</div>
+<script>
+let D=null,LG='trendyol';const $=i=>document.getElementById(i);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const num=s=>{if(s===''||s==null)return NaN;return parseFloat(String(s).replace(/[^\d,.-]/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'))};
+const SONUC={0:'<span class="ok">Başarılı</span>',267011:'<span class="mut">Hiç çalışmadı</span>',267009:'<span class="warn">Çalışıyor</span>',1:'<span class="err">Hata</span>'};
+const renk=l=>/HATA|hata|ENGEL|BULUNAMADI|EKLENMEDI/.test(l)?'err':/BILDIRIM/.test(l)?'warn':/yazıldı|bitti|Sıralandı/.test(l)?'ok':'';
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{LG=b.dataset.l;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));ciz()});
+async function yukle(f){try{D=await (await fetch('/api/hepsi'+(f?'?yenile=1':''))).json();ciz()}catch(e){$('simdi').textContent='Panel sunucusuna ulaşılamıyor'}}
+async function baslat(is){if(!confirm((is==='aff'?'AFF':'Trendyol')+' işi şimdi başlatılsın mı?'))return;await fetch('/api/baslat?is='+is,{method:'POST'});setTimeout(yukle,3000)}
+function ciz(){if(!D)return;$('saat').textContent=D.zaman;
+ const a=D.aktif;$('simdi').className='now'+(a.length?' run':'');
+ if(a.length)$('simdi').innerHTML=a.map(x=>`<b>${x.is==='aff'?'AFF':x.is==='trendyol'?'Trendyol taraması':x.is}${x.mod?' ('+esc(x.mod)+')':''}</b> çalışıyor, başlangıç ${esc(x.bas.slice(11))}<br><span class="mut">Son adım:</span> ${esc(x.son)}`).join('<hr>');
+ else{const g=D.durum.gorevler.filter(x=>x.sonraki).sort((p,q)=>p.sonraki<q.sonraki?-1:1)[0];$('simdi').innerHTML='Boşta. '+(g?`Sıradaki: <b>${esc(g.ad)}</b> ${esc(g.sonraki.slice(11,16))}`:'')}
+ const run=a.map(x=>x.is);$('bT').disabled=run.includes('trendyol');$('bA').disabled=run.includes('aff');
+ $('gorev').innerHTML='<tr><th>Görev</th><th>Durum</th><th>Son çalışma</th><th>Sonuç</th><th>Sıradaki</th></tr>'+D.durum.gorevler.map(g=>`<tr><td>${esc(g.ad)}</td><td>${g.durum==='Running'?'<span class="warn">Çalışıyor</span>':'Bekliyor'}</td><td>${esc(g.son.slice(5,16))}</td><td>${SONUC[g.sonuc]??('<span class="err">Kod '+g.sonuc+'</span>')}</td><td>${esc(g.sonraki.slice(5,16))}</td></tr>`).join('');
+ $('sepet').innerHTML=D.sepet.length?'<pre>'+D.sepet.map(l=>`<span class="${renk(l)}">${esc(l)}</span>`).join('\n')+'</pre>':'<span class="mut">Bugün sepet işlemi yok</span>';
+ const T=D.tablolar.trendyol;
+ if(T.hata){$('tTab').textContent='';$('tTbl').innerHTML=`<tr><td class="err">${esc(T.hata)}</td></tr>`;$('ozet').innerHTML=''}
+ else{$('tTab').textContent='('+T.tab+', tablo saati '+D.tablolar.zaman.slice(11,16)+')';
+  const S=T.satirlar,sep=S.filter(r=>!isNaN(num(r[7]))),r2=S.filter(r=>num(r[8])>2);
+  $('ozet').innerHTML=`<div class="stat">Teklif <b>${S.length}</b></div><div class="stat">Sepet hesaplı <b>${sep.length}</b></div><div class="stat">ROAS &gt; 2 <b class="ok">${r2.length}</b></div><br><br>`;
+  $('tTbl').innerHTML='<tr><th>#</th><th>Teklif</th><th>Eşik</th><th>Bonus</th><th>Dönem</th><th>Sepet TL</th><th>ROAS</th><th>Ziyaretçi</th><th>Durum</th><th>Link</th></tr>'+S.map((r,i)=>{const ro=num(r[8]);return `<tr class="${ro>2?'g':''}"><td class="mut">${i+2}</td><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td>${esc(r[4])}</td><td><b>${esc(r[7])}</b></td><td>${isNaN(ro)?'':ro.toFixed(2).replace('.',',')}</td><td>${esc(r[10])}</td><td>${esc(r[12])}</td><td>${r[6]?`<a href="${esc(r[6])}" target="_blank">aç</a>`:''}</td></tr>`}).join('')}
+ const A=D.tablolar.aff;
+ if(A.hata)$('aTbl').innerHTML=`<tr><td class="err">${esc(A.hata)}</td></tr>`;
+ else{$('aTab').textContent='(sekme '+A.tab+')';$('aTbl').innerHTML='<tr><th>Kişi</th><th>Marka</th><th>Ziyaretçi (Q)</th><th>Hakediş (R)</th></tr>'+A.satirlar.map(r=>`<tr><td>${esc(r.kisi)}</td><td>${esc(r.marka)}</td><td>${esc(r.Q)}</td><td>${esc(r.R)}</td></tr>`).join('')}
+ $('bild').innerHTML=D.bildirimler.length?D.bildirimler.map(b=>`<pre class="${/hata|uyar/i.test(b)?'err':''}" style="max-height:120px">${esc(b)}</pre>`).join(''):'<span class="mut">Bildirim yok</span>';
+ const lg=$('log'),alt=lg.scrollTop+lg.clientHeight>=lg.scrollHeight-20;lg.innerHTML=(D.loglar[LG]||[]).map(l=>`<span class="${renk(l)}">${esc(l)}</span>`).join('\n')||'<span class="mut">Bugün log yok</span>';if(alt)lg.scrollTop=lg.scrollHeight}
+yukle();setInterval(yukle,5000);
+</script></body></html>

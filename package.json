@@ -1,0 +1,3 @@
+{ "name": "otomasyon", "version": "1.0.0", "private": true,
+  "description": "Trendyol Bonuslu Teklifler + AFF hakedis/ziyaret otomasyonu",
+  "dependencies": { "playwright": "^1.48.0" } }
